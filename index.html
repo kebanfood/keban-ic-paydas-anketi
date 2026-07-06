@@ -799,7 +799,8 @@
     <div class="tabs-container">
       <button class="tab-btn active" id="tab-survey" onclick="switchTab('survey-tab', this)">Anket Formu</button>
       <button class="tab-btn" id="tab-matrix" style="display: none;" onclick="switchTab('matrix-tab', this)">Hizmet Verme Matrisi (Ağırlıklar)</button>
-      <button class="tab-btn" id="tab-dashboard" style="display: none;" onclick="switchTab('dashboard-tab', this)">Sonuç Simülasyon Paneli</button>
+      <!-- <button class="tab-btn" id="tab-dashboard" style="display: none;" onclick="switchTab('dashboard-tab', this)">Sonuç Simülasyon Paneli</button> -->
+      <button class="tab-btn" id="tab-live-dashboard" style="display: none; background-color: #f0fdf4; color: #166534;" onclick="switchTab('live-dashboard-tab', this)">Canlı Sonuçlar</button>
     </div>
 
     <!-- MAIN SURVEY TAB -->
@@ -1004,6 +1005,47 @@
       </div>
     </div>
 
+    <!-- LIVE DASHBOARD TAB -->
+    <div id="live-dashboard-tab" class="tab-content">
+      <div class="main-content">
+        <h2 style="font-size: 20px; font-weight: 800; color: var(--gray-900); margin-bottom: 8px;">🚀 CANLI ANKET SONUÇLARI</h2>
+        <p style="font-size: 14px; color: var(--gray-500); margin-bottom: 20px;">Bu panel, <strong style="color:var(--primary)">results.json</strong> dosyasındaki (Power Automate tarafından güncellenen) anket verilerini anlık okuyarak, hizmet matrisi ağırlıklarına göre konsolide edilmiş gerçek skorları gösterir.</p>
+
+        <div style="background-color: #f0fdf4; padding: 16px 20px; border-radius: 8px; border-left: 4px solid #16a34a; margin-bottom: 24px;">
+          <h4 style="color: #166534; font-weight: 700; font-size: 15px; margin-bottom: 8px;">📖 Sonuçlar Nasıl Okunmalı? (Okuma Metodolojisi)</h4>
+          <ul style="font-size: 13px; color: var(--gray-800); margin-left: 20px; line-height: 1.6;">
+            <li><strong>Adil Konsolide Puan:</strong> Her departmanın puanı, <u>sadece oy kullanmış olan</u> diğer departmanların verdiği puanların, Hizmet Verme Matrisi'ndeki ağırlıklarıyla çarpılmasıyla hesaplanır. Puan aralığı 1.00 ile 4.00 arasındadır. Ekranda hem puan hem de % cinsinden başarı oranı gösterilir.</li>
+            <li><strong>NPS (Net Promoter Score):</strong> Anket katılımcılarının "Bizi ne kadar tavsiye edersiniz?" sorusuna verdikleri 1 ile 10 arasındaki puanların düz ortalamasıdır. Global hesaplama yerine şirket içi kültürümüze uygun olarak <strong>10 üzerinden ortalama puan</strong> şeklinde gösterilmektedir.</li>
+          </ul>
+        </div>
+
+        <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="form-btn" style="width: auto; padding: 10px 24px;" onclick="loadLiveResults()">Verileri Güncelle (Yenile)</button>
+          <span id="live-last-update" style="font-size: 12px; color: var(--gray-500);">Son Güncelleme: Bekleniyor...</span>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+          <!-- Live Calculated Results -->
+          <div class="dashboard-card">
+            <h4 style="border-bottom: 1px solid var(--gray-200); padding-bottom: 8px; margin-bottom: 16px;">
+              <span>Canlı Konsolide Hizmet Skorları</span>
+              <span style="font-size: 11px; background-color: var(--gray-200); color: var(--gray-700); padding: 2px 8px; border-radius: 4px;">Gerçek Ağırlıklı Ortalama</span>
+            </h4>
+            <div id="live-results" class="score-list">
+              <div style="text-align: center; color: var(--gray-500); padding: 20px;">Veriler yükleniyor...</div>
+            </div>
+            
+            <h4 style="border-bottom: 1px solid var(--gray-200); padding-bottom: 8px; margin-top: 30px; margin-bottom: 16px;">
+              <span>Son Gelen 10 Geribildirim (Açık Uçlu)</span>
+            </h4>
+            <div id="live-feedbacks" style="display:flex; flex-direction: column; gap:10px;">
+              <div style="text-align: center; color: var(--gray-500); padding: 20px;">Veriler yükleniyor...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1160,8 +1202,11 @@
           isAdminActive = true;
           alert("Giriş başarılı! Yönetici sekmeleri aktif edildi.");
           document.getElementById("tab-matrix").style.display = "inline-block";
-          document.getElementById("tab-dashboard").style.display = "inline-block";
+          // document.getElementById("tab-dashboard").style.display = "inline-block";
+          document.getElementById("tab-live-dashboard").style.display = "inline-block";
           document.getElementById("finished-dashboard-btn").style.display = "inline-block";
+          // Otomatik canlı sonuçları yükle
+          setTimeout(loadLiveResults, 500);
         } else {
           alert("Hatalı PIN kodu! Sayfa kullanıcı modunda açılıyor.");
         }
@@ -1746,8 +1791,160 @@
       });
     }
 
+    // =========================================================
+    // CANLI SONUÇ PANELI (results.json OKUMA VE HESAPLAMA)
+    // =========================================================
+    async function loadLiveResults() {
+      const resultsContainer = document.getElementById("live-results");
+      const feedbacksContainer = document.getElementById("live-feedbacks");
+      const lastUpdateSpan = document.getElementById("live-last-update");
+      
+      try {
+        resultsContainer.innerHTML = '<div style="text-align: center; color: var(--gray-500); padding: 20px;">GitHub üzerinden results.json okunuyor...</div>';
+        
+        const response = await fetch('results.json?t=' + new Date().getTime());
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        
+        const data = await response.json();
+        
+        lastUpdateSpan.innerText = "Son Güncelleme: " + new Date().toLocaleTimeString('tr-TR');
+
+        const groupedScores = {};
+        const npsData = {}; // NPS hesaplaması için: { "Mali": { sum: 0, total: 0 } }
+        let feedbacks = []; // Array of feedback objects { date: ..., text: ... }
+
+        data.forEach(row => {
+          const evalBy = row["Değerlendiren Departman"];
+          const evalTarget = row["Değerlendirilen Departman"];
+          const score = Number(row["Ortalama Puan"]);
+          const npsScore = Number(row["NPS (0-10)"]);
+          const fb = row["Açık Uçlu Geri Bildirim"];
+          const dateStr = row["Zaman Damgası"] || "";
+
+          if (evalBy && evalTarget) {
+            // Puan hesaplamaları için
+            if (!isNaN(score)) {
+              if (!groupedScores[evalTarget]) groupedScores[evalTarget] = {};
+              if (!groupedScores[evalTarget][evalBy]) groupedScores[evalTarget][evalBy] = [];
+              groupedScores[evalTarget][evalBy].push(score);
+            }
+
+            // NPS Hesaplamaları için (Ortalama)
+            if (!isNaN(npsScore)) {
+              if (!npsData[evalTarget]) npsData[evalTarget] = { sum: 0, total: 0 };
+              npsData[evalTarget].total += 1;
+              npsData[evalTarget].sum += npsScore;
+            }
+
+            // Geribildirimler için
+            if (fb && fb.trim().length > 0) {
+              feedbacks.push({
+                dateStr: dateStr,
+                html: `<div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
+                         <span style="font-size:11px; color:var(--gray-500);">${dateStr}</span>
+                         <span style="font-size:11px; background:var(--gray-100); padding:2px 6px; border-radius:4px;"><strong>${evalBy}</strong> ➔ <strong>${evalTarget}</strong></span>
+                       </div>
+                       <div style="font-size:13.5px; color:var(--gray-800);">"${fb}"</div>`
+              });
+            }
+          }
+        });
+
+        const depts = Object.keys(matrix);
+        resultsContainer.innerHTML = "";
+        
+        depts.forEach(targetDept => {
+          let weightedSum = 0;
+          let weightTotal = 0;
+
+          depts.forEach(evaluatingDept => {
+            if (evaluatingDept === targetDept) return;
+
+            const weight = matrix[evaluatingDept][targetDept];
+            if (weight !== undefined && weight > 0) {
+              const scoresArr = (groupedScores[targetDept] && groupedScores[targetDept][evaluatingDept]) ? groupedScores[targetDept][evaluatingDept] : [];
+              
+              let avgScore = 0;
+              if (scoresArr.length > 0) {
+                avgScore = scoresArr.reduce((a,b)=>a+b, 0) / scoresArr.length;
+                weightedSum += avgScore * (weight / 100);
+                weightTotal += weight; // SADECE oy kullanıldıysa ağırlığı toplama dahil et (Adil ortalama için)
+              }
+            }
+          });
+
+          let finalScore = weightedSum;
+          if (weightTotal > 0 && weightTotal !== 100) {
+            finalScore = (weightedSum / (weightTotal / 100));
+          }
+          
+          if (weightTotal === 0) finalScore = 0;
+
+          // Puanı 5 üzerinden 4'e çevirelim mi? Puanlar 1-4 arası veriliyor anketlerde. Yani max 4.00
+          // "Ortalama Puan" Excel'de genelde 1-4 üzerinden.
+          const percentage = (finalScore / 4) * 100;
+          let colorClass = "red";
+          if (finalScore >= 3.2) colorClass = "green";
+          else if (finalScore >= 2.5) colorClass = "yellow";
+
+          // NPS Skoru Hesaplama (Ortalama 10 üzerinden)
+          let npsDisplay = `<span style="font-size: 12px; color: var(--gray-400); margin-left: 10px;">NPS: Veri Yok</span>`;
+          if (npsData[targetDept] && npsData[targetDept].total > 0) {
+            const data = npsData[targetDept];
+            const npsFinal = (data.sum / data.total).toFixed(1);
+            
+            let npsColor = "#16a34a"; // green
+            if (npsFinal < 7.0) npsColor = "#ef4444"; // red
+            else if (npsFinal < 8.5) npsColor = "#f59e0b"; // yellow
+            
+            npsDisplay = `<span style="font-size: 13px; font-weight: 700; color: ${npsColor}; margin-left: 15px; border-left: 1px solid var(--gray-200); padding-left: 15px;">NPS: ${npsFinal} / 10</span>`;
+          }
+
+          const scoreRow = document.createElement("div");
+          scoreRow.className = "score-item";
+          scoreRow.innerHTML = `
+            <span>${targetDept}</span>
+            <div style="display:flex; align-items:center;">
+              <span class="score-value ${colorClass}">%${percentage.toFixed(0)} (${finalScore.toFixed(2)} / 4.00)</span>
+              ${npsDisplay}
+            </div>
+          `;
+          resultsContainer.appendChild(scoreRow);
+        });
+
+        // 3. Feedbacks render (Son 10 tanesi ters sıra)
+        feedbacksContainer.innerHTML = "";
+        
+        // Sadece son 10'u göstermek için önce verileri tersine çevirelim (en yeni en üstte)
+        feedbacks.reverse();
+        const latestFeedbacks = feedbacks.slice(0, 10);
+
+        if (latestFeedbacks.length === 0) {
+          feedbacksContainer.innerHTML = '<div style="color:var(--gray-500); font-style:italic;">Henüz geri bildirim bulunmuyor.</div>';
+        } else {
+          latestFeedbacks.forEach(f => {
+            const div = document.createElement("div");
+            div.style.padding = "12px";
+            div.style.backgroundColor = "white";
+            div.style.border = "1px solid var(--gray-200)";
+            div.style.borderRadius = "6px";
+            div.innerHTML = f.html;
+            feedbacksContainer.appendChild(div);
+          });
+        }
+
+      } catch (err) {
+        console.error("Live Data Error:", err);
+        resultsContainer.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">Hata: results.json okunamadı.<br><small>${err.message}</small><br><br>Henüz anket verisi Power Automate tarafından oluşturulmamış olabilir.</div>`;
+        feedbacksContainer.innerHTML = "";
+      }
+    }
+
     function updateSidebarHeader() {
       // Setup active user dept if any
+      document.getElementById("login-btn").disabled = false;
     }
   </script>
 
