@@ -1177,6 +1177,24 @@
       let validDeptSelected = false;
 
       if (deptSlug) {
+        // Mükerrer doldurma kontrolü (Kullanıcı bu cihazdan daha önce doldurmuş mu?)
+        try {
+          if (localStorage.getItem('anket_tamamlandi_' + deptSlug) === 'true' && !isAdminActive) {
+            document.getElementById("app-container").innerHTML = `
+              <div style="text-align: center; padding: 60px 20px;">
+                <div style="background-color: var(--success); color: white; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <h2 style="color: var(--primary); font-size: 28px; margin-bottom: 15px;">Anketi Zaten Doldurdunuz</h2>
+                <p style="color: var(--text-light); font-size: 18px;">Katılımınız için teşekkür ederiz.<br>Bu cihazdan (tarayıcıdan) aynı departman bağlantısı ile yalnızca bir kez anket doldurulabilmektedir.</p>
+              </div>
+            `;
+            return; // Sayfanın geri kalanının yüklenmesini durdur
+          }
+        } catch(e) {
+          console.warn("LocalStorage kullanılamıyor.", e);
+        }
+
         const slugMap = {
           'ik': 'İK Direktörlüğü',
           'kalite': 'Kalite ve Süreç Yönetimi Direktörlüğü',
@@ -1575,6 +1593,17 @@
       });
 
       if (remainingCount === 0) {
+        // Tüm değerlendirmeler bitti! LocalStorage'a "dolduruldu" bayrağını as (Sadece departman parametresi varsa)
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const deptSlug = urlParams.get('dept');
+          if (deptSlug && !isAdminActive) {
+            localStorage.setItem('anket_tamamlandi_' + deptSlug, 'true');
+          }
+        } catch(e) {
+          console.warn("LocalStorage kullanılamıyor.", e);
+        }
+
         // All evaluations done!
         document.getElementById("survey-form-view").style.display = "none";
         document.getElementById("finished-view").style.display = "block";
