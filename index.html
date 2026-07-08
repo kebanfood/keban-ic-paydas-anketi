@@ -825,50 +825,54 @@
 </select>
 <script>
   (function(){
-    var urlParams = new URLSearchParams(window.location.search);
-    var dept = urlParams.get('dept');
-    if (dept) {
-      var map = {
-        'ik': 'İK Direktörlüğü',
-        'kalite': 'Kalite ve Süreç Yönetimi Direktörlüğü',
-        'mali': 'Mali İşler Direktörlüğü',
-        'marka': 'Marka Direktörlüğü',
-        'mimari': 'Mimari Operasyon Müdürlüğü',
-        'tedarik': 'Tedarik Zinciri Direktörlüğü',
-        'uretim': 'Üretim ve Tesis Yönetimi Direktörlüğü',
-        'yatirimci': 'Yatırımcı İlişkileri Direktörlüğü'
-      };
-      
-      var searchKey = map[dept.toLowerCase()];
-      if (searchKey) {
-        var sel = document.getElementById('user-dept-select');
+    try {
+      var urlParams = new URLSearchParams(window.location.search);
+      var dept = urlParams.get('dept');
+      if (dept) {
+        var map = {
+          'ik': 'İK Direktörlüğü',
+          'kalite': 'Kalite ve Süreç Yönetimi',
+          'mali': 'Mali İşler',
+          'marka': 'Marka',
+          'mimari': 'Mimari Operasyon',
+          'tedarik': 'Tedarik Zinciri',
+          'uretim': 'Üretim ve Tesis',
+          'yatirimci': 'Yatırımcı İlişkileri'
+        };
         
-        // Find the index by matching text
-        var foundIndex = -1;
-        for (var i = 0; i < sel.options.length; i++) {
-          if (sel.options[i].value && (sel.options[i].value.indexOf(searchKey) !== -1 || searchKey.indexOf(sel.options[i].value) !== -1)) {
-            foundIndex = i;
-            break;
+        var dKey = dept.trim().toLowerCase();
+        var searchKey = map[dKey];
+        
+        if (searchKey) {
+          var sel = document.getElementById('user-dept-select');
+          if (sel) {
+            var foundIndex = -1;
+            for (var i = 0; i < sel.options.length; i++) {
+              var val = sel.options[i].value;
+              if (val && val.trim() !== "" && val.indexOf(searchKey) !== -1) {
+                foundIndex = i;
+                break;
+              }
+            }
+            
+            if (foundIndex !== -1) {
+               sel.selectedIndex = foundIndex;
+               sel.disabled = true;
+               sel.style.backgroundColor = "#e2e8f0";
+               sel.style.border = "2px solid #94a3b8";
+               sel.style.pointerEvents = "none";
+               
+               var targetVal = sel.options[foundIndex].value;
+               for (var j = sel.options.length - 1; j >= 0; j--) {
+                 if (sel.options[j].value !== targetVal) {
+                   sel.remove(j);
+                 }
+               }
+            }
           }
         }
-        
-        if (foundIndex !== -1) {
-           sel.selectedIndex = foundIndex;
-           sel.disabled = true;
-           sel.style.backgroundColor = "#e2e8f0";
-           sel.style.border = "2px solid #94a3b8";
-           sel.style.pointerEvents = "none";
-           
-           // Remove all other options so it's impossible to change
-           var targetVal = sel.options[foundIndex].value;
-           for (var j = sel.options.length - 1; j >= 0; j--) {
-             if (sel.options[j].value !== targetVal) {
-               sel.remove(j);
-             }
-           }
-        }
       }
-    }
+    } catch(e) { console.error("Inline lock script error:", e); }
   })();
 </script>
 
@@ -1271,71 +1275,29 @@
       try { updateSidebarHeader(); } catch(e) { console.warn(e); }
 
       // Otomatik Departman Seçimi ve Kilitleme (?dept=slug)
-      const deptSlug = urlParams.get('dept');
-      let validDeptSelected = false;
-
-      if (deptSlug) {
+      const deptParam = urlParams.get('dept');
+      if (deptParam) {
         try {
-          if (localStorage.getItem('anket_tamamlandi_' + deptSlug) === 'true' && !isAdminActive) {
-            document.getElementById("app-container").innerHTML = `
-              <div style="text-align: center; padding: 60px 20px;">
-                <div style="background-color: var(--success); color: white; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <h2 style="color: var(--primary); font-size: 24px; margin-bottom: 10px;">Anketi Zaten Doldurdunuz</h2>
-                <p style="color: var(--gray-600); font-size: 16px;">Katılımınız ve değerli geri bildirimleriniz için teşekkür ederiz.</p>
-              </div>`;
+          if (localStorage.getItem('anket_tamamlandi_' + deptParam) === 'true' && !isAdminActive) {
+            document.getElementById('app-container').innerHTML = `<div style="text-align: center; padding: 60px 20px;"><h2 style="color: var(--primary); font-size: 24px; margin-bottom: 10px;">Anketi Zaten Doldurdunuz</h2></div>`;
             return;
           }
         } catch(e) { }
 
-        const partialMap = {
-          'ik': 'İK Direktörlüğü',
-          'kalite': 'Kalite',
-          'mali': 'Mali İşler',
-          'marka': 'Marka',
-          'mimari': 'Mimari',
-          'tedarik': 'Tedarik',
-          'uretim': 'Üretim',
-          'yatirimci': 'Yatırımcı'
-        };
-        
-        const partialSearch = partialMap[deptSlug.toLowerCase()];
-        if (partialSearch) {
-          const select = document.getElementById('user-dept-select');
-          
-          for (let i = 0; i < select.options.length; i++) {
-             if (select.options[i].value.indexOf(partialSearch) !== -1) {
-                select.selectedIndex = i;
-                validDeptSelected = true;
-                break;
-             }
-          }
-
-          if (validDeptSelected) {
-            select.disabled = true;
-            select.style.backgroundColor = "#e2e8f0";
-            select.style.cursor = "not-allowed";
-            select.style.border = "2px solid #94a3b8";
-            
-            // Trigger UI update
-            const event = new Event('change');
-            select.dispatchEvent(event);
-          }
+        const select = document.getElementById('user-dept-select');
+        // if length is 1, and the value is NOT empty, it means our INLINE script successfully locked it!
+        if (select.options.length === 1 && select.options[0].value !== '') {
+          const event = new Event('change');
+          select.dispatchEvent(event);
+        } else if (!isAdminActive) {
+          select.disabled = true;
+          select.style.backgroundColor = '#fee2e2';
+          select.style.cursor = 'not-allowed';
+          select.innerHTML = '<option value="" disabled selected>Geçersiz Bağlantı (Erişim Reddedildi)</option>';
+          document.getElementById('evaluable-list').innerHTML = '<div style="text-align: center; color: var(--primary); padding: 20px; font-size: 14px; font-weight:bold;">Güvenlik Uyarısı: Eksik veya hatalı anket bağlantısı ile giriş yaptınız. Lütfen e-postanıza gönderilen özel departman linkini kullanarak tekrar deneyin.</div>';
         }
       }
-
-      if (!validDeptSelected && !isAdminActive) {
-        const select = document.getElementById('user-dept-select');
-        select.disabled = true;
-        select.style.backgroundColor = "#fee2e2";
-        select.style.cursor = "not-allowed";
-        select.style.border = "2px solid #ef4444";
-        select.innerHTML = '<option value="" disabled selected>Geçersiz Bağlantı (Erişim Reddedildi)</option>';
-        document.getElementById("evaluable-list").innerHTML = '<div style="text-align: center; color: var(--primary); padding: 20px; font-size: 14px; font-weight:bold;">Güvenlik Uyarısı: Eksik veya hatalı anket bağlantısı ile giriş yaptınız. Lütfen e-postanıza gönderilen özel departman linkini kullanarak tekrar deneyin.</div>';
-      }
     };
-
 
     function switchTab(tabId, element) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
