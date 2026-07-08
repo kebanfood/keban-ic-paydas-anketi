@@ -846,7 +846,7 @@
         // Find the index by matching text
         var foundIndex = -1;
         for (var i = 0; i < sel.options.length; i++) {
-          if (sel.options[i].value.indexOf(searchKey) !== -1 || searchKey.indexOf(sel.options[i].value) !== -1) {
+          if (sel.options[i].value && (sel.options[i].value.indexOf(searchKey) !== -1 || searchKey.indexOf(sel.options[i].value) !== -1)) {
             foundIndex = i;
             break;
           }
