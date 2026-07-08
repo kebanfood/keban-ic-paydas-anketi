@@ -812,7 +812,7 @@
           <div class="sidebar-section">
             <h3>1. Kendi Departmanınız</h3>
             <select id="user-dept-select" class="select-input" onchange="onUserDeptChange()">
-              <option value="" disabled selected>Geçersiz Bağlantı (Erişim Reddedildi)</option>
+              <option value="" disabled selected>Kendi Biriminizi Seçin...</option>
               <option value="İK Direktörlüğü">İK Direktörlüğü</option>
               <option value="Kalite ve Süreç Yönetimi Direktörlüğü">Kalite ve Süreç Yönetimi</option>
               <option value="Mali İşler Direktörlüğü">Mali İşler Direktörlüğü</option>
@@ -1274,7 +1274,7 @@
         select.disabled = true;
         select.style.backgroundColor = "#fee2e2";
         select.style.cursor = "not-allowed";
-        select.innerHTML = '<option value="" disabled selected>Geçersiz Bağlantı (Erişim Reddedildi)</option>';
+        select.innerHTML = '<option value="" disabled selected>Kendi Biriminizi Seçin...</option>';
         
         document.getElementById("evaluable-list").innerHTML = '<div style="text-align: center; color: var(--primary); padding: 20px; font-size: 14px; font-weight:bold;">Güvenlik Uyarısı: Eksik veya hatalı anket bağlantısı ile giriş yaptınız. Lütfen e-postanıza gönderilen özel departman linkini kullanarak tekrar deneyin.</div>';
       }
