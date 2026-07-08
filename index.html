@@ -821,7 +821,57 @@
               <option value="Tedarik Zinciri Direktörlüğü">Tedarik Zinciri Direktörlüğü</option>
               <option value="Üretim ve Tesis Yönetimi Direktörlüğü">Üretim ve Tesis Yönetimi</option>
               <option value="Yatırımcı İlişkileri Direktörlüğü">Yatırımcı İlişkileri</option>
-            </select>
+            
+</select>
+<script>
+  (function(){
+    var urlParams = new URLSearchParams(window.location.search);
+    var dept = urlParams.get('dept');
+    if (dept) {
+      var map = {
+        'ik': 'İK Direktörlüğü',
+        'kalite': 'Kalite ve Süreç Yönetimi Direktörlüğü',
+        'mali': 'Mali İşler Direktörlüğü',
+        'marka': 'Marka Direktörlüğü',
+        'mimari': 'Mimari Operasyon Müdürlüğü',
+        'tedarik': 'Tedarik Zinciri Direktörlüğü',
+        'uretim': 'Üretim ve Tesis Yönetimi Direktörlüğü',
+        'yatirimci': 'Yatırımcı İlişkileri Direktörlüğü'
+      };
+      
+      var searchKey = map[dept.toLowerCase()];
+      if (searchKey) {
+        var sel = document.getElementById('user-dept-select');
+        
+        // Find the index by matching text
+        var foundIndex = -1;
+        for (var i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value.indexOf(searchKey) !== -1 || searchKey.indexOf(sel.options[i].value) !== -1) {
+            foundIndex = i;
+            break;
+          }
+        }
+        
+        if (foundIndex !== -1) {
+           sel.selectedIndex = foundIndex;
+           sel.disabled = true;
+           sel.style.backgroundColor = "#e2e8f0";
+           sel.style.border = "2px solid #94a3b8";
+           sel.style.pointerEvents = "none";
+           
+           // Remove all other options so it's impossible to change
+           var targetVal = sel.options[foundIndex].value;
+           for (var j = sel.options.length - 1; j >= 0; j--) {
+             if (sel.options[j].value !== targetVal) {
+               sel.remove(j);
+             }
+           }
+        }
+      }
+    }
+  })();
+</script>
+
           </div>
 
           <div class="sidebar-section">
@@ -1215,10 +1265,10 @@
         }
       }
 
-      renderDimensionsForm();
-      renderMatrixTable();
-      renderSimulationDashboard();
-      updateSidebarHeader();
+      try { renderDimensionsForm(); } catch(e) { console.warn(e); }
+      try { renderMatrixTable(); } catch(e) { console.warn(e); }
+      try { renderSimulationDashboard(); } catch(e) { console.warn(e); }
+      try { updateSidebarHeader(); } catch(e) { console.warn(e); }
 
       // Otomatik Departman Seçimi ve Kilitleme (?dept=slug)
       const deptSlug = urlParams.get('dept');
