@@ -1282,6 +1282,10 @@
             document.getElementById('app-container').innerHTML = `<div style="text-align: center; padding: 60px 20px;"><h2 style="color: var(--primary); font-size: 24px; margin-bottom: 10px;">Anketi Zaten Doldurdunuz</h2></div>`;
             return;
           }
+          const savedEvals = localStorage.getItem('anket_evaluations_' + deptParam);
+          if (savedEvals) {
+            evaluations = JSON.parse(savedEvals);
+          }
         } catch(e) { }
 
         const select = document.getElementById('user-dept-select');
@@ -1600,6 +1604,12 @@
         evaluations[activeTargetDept]["nps"] = currentNPS;
         evaluations[activeTargetDept]["feedback"] = fd.get("feedback") || "";
 
+        try {
+          const urlP = new URLSearchParams(window.location.search);
+          const dp = urlP.get('dept');
+          if (dp) localStorage.setItem('anket_evaluations_' + dp, JSON.stringify(evaluations));
+        } catch(e){}
+
         // Reset list item state in sidebar to green
         onUserDeptChange();
         checkAndAdvance();
@@ -1630,6 +1640,12 @@
           evaluations[activeTargetDept] = localScores;
           evaluations[activeTargetDept]["nps"] = currentNPS;
           evaluations[activeTargetDept]["feedback"] = fd.get("feedback") || "";
+
+          try {
+            const urlP = new URLSearchParams(window.location.search);
+            const dp = urlP.get('dept');
+            if (dp) localStorage.setItem('anket_evaluations_' + dp, JSON.stringify(evaluations));
+          } catch(e){}
 
           onUserDeptChange();
           checkAndAdvance();
@@ -1687,11 +1703,16 @@
       }
     }
 
-    function resetAllProcess() {
-      evaluations = {};
-      document.getElementById("user-dept-select").value = "";
-      onUserDeptChange();
-    }
+      function resetAllProcess() {
+        evaluations = {};
+        try {
+          const urlP = new URLSearchParams(window.location.search);
+          const dp = urlP.get('dept');
+          if (dp) localStorage.removeItem('anket_evaluations_' + dp);
+        } catch(e) {}
+        document.getElementById("user-dept-select").value = "";
+        onUserDeptChange();
+      }
 
     // Hizmet Verme Matrisi
     function renderMatrixTable() {
