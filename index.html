@@ -8,6 +8,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function(){
+      var urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') !== 'admin') {
+        document.addEventListener("DOMContentLoaded", function() {
+           document.querySelector('.container').innerHTML = `
+             <div style="text-align:center; padding: 100px 20px; font-family: 'Inter', sans-serif;">
+               <img src="https://360.kebanfood.com/logo.png" style="height:60px; margin-bottom:24px;">
+               <h2 style="color: #cc0000; font-size: 28px; font-weight:800; margin-bottom: 16px;">İç Paydaş Değerlendirme Anketi Sona Ermiştir</h2>
+               <p style="color: #475569; font-size: 16px; max-width: 600px; margin: 0 auto; line-height: 1.6;">Değerli Keban Food çalışanları, anketimize göstermiş olduğunuz yoğun ilgi ve katılım için teşekkür ederiz. Anket erişime kapatılmıştır. Süreçle ilgili geri bildirimler yakında paylaşılacaktır.</p>
+             </div>
+           `;
+        });
+      }
+    })();
+  </script>
   <style>
     :root {
       --primary: #cc0000;
